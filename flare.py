@@ -3,7 +3,7 @@ import ast
 from .flare_helper import *
 
 
-def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini'):
+def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbose=True):
     '''
     Uses a advanced RAG technique called FLARE to answer the question. It's an implementation
     of the paper: "Active Retrieval Augmented Generation" Jiang ZB and fellow scientists in Octover
@@ -161,6 +161,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini'):
 
     # printing some information
     ## It prints the question construction for the annotated answer because it's clearer to make the annotations as the questions itself
-    print(
-        f"""Question: {question}\nAnswer: {answer.choices[0].message.content}\nAnnotated Answer: {questions_construction.choices[0].message.content}\nReconstructed Answer: {reconstructed_answer.choices[0].message.content}""")
+    if verbose:
+        print(
+            f"""Question: {question}\nAnswer: {answer.choices[0].message.content}\nAnnotated Answer: {questions_construction.choices[0].message.content}\nReconstructed Answer: {reconstructed_answer.choices[0].message.content}""")
     return answer, questions_construction, reconstructed_answer
