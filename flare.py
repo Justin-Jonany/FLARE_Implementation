@@ -143,7 +143,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
     reconstructing = f"""
     Here are the questions and their answers:
     {question_answer}
-    Now with answers to those questions, improve the original answer without changing the format of the answer.
+    Now with answers to those questions and the original question: {question}, improve the original answer without changing the format of the answer.
     
     Notes:
     It's critical to just output the final answer.
