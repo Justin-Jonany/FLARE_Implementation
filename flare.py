@@ -1,6 +1,6 @@
 from openai import OpenAI
 import ast
-from flare_helper import *
+from .flare_helper import *
 
 def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini'):
   '''
