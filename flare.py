@@ -96,7 +96,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini'):
       {"role": "system", "content": f"""You are a book expert that answers questions about books.
       Question: {question}
       Context: called the RAG
-      Answer: {answer.choices[0].message.content}
+      Original Answer: {answer.choices[0].message.content}
 
       Now, I have marked the answer to where you are uncertain with the phrases. For every, phrases in between
       [uncertain] [/uncertain], please construct a question that will answer each uncertain phrase and mark it as [Search(question)]
@@ -137,7 +137,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini'):
   reconstructing = f"""
   Here are the questions and their answers:
   {question_answer}
-  Now with answers to those questions, fix the original answer into a paragraph:
+  Now with answers to those questions, improve the original answer without changing the format of the answer:
   """
   reconstructing_message = new_message + [{"role": "user", "content": reconstructing}]
   reconstructed_answer = client.chat.completions.create(
