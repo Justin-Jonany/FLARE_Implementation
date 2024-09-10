@@ -2,49 +2,51 @@ from openai import OpenAI
 import ast
 from .flare_helper import *
 
+
 def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini'):
-  '''
-  Uses a advanced RAG technique called FLARE to answer the question. It's an implementation
-  of the paper: "Active Retrieval Augmented Generation" Jiang ZB and fellow scientists in Octover
-  2023.
+    '''
+    Uses a advanced RAG technique called FLARE to answer the question. It's an implementation
+    of the paper: "Active Retrieval Augmented Generation" Jiang ZB and fellow scientists in Octover
+    2023.
 
-  Args:
-    question: The question to be answered.
-    retriever: langchain retriever to be used.
-    openai_api_key: The OPENAI API key to be used.
-  Returns:
-    The answer to the question.
+    Args:
+      question: The question to be answered.
+      retriever: langchain retriever to be used.
+      openai_api_key: The OPENAI API key to be used.
+    Returns:
+      The answer to the question.
 
-  '''
-  client = OpenAI(api_key=openai_api_key)
+    '''
+    client = OpenAI(api_key=openai_api_key)
 
-  # getting the first output, normal rag
-  ## get context
-  context = retriever.get_relevant_documents(question)
+    # getting the first output, normal rag
+    # get context
+    context = retriever.get_relevant_documents(question)
 
-  ## constructing message
-  message = [
+    # constructing message
+    message = [
         {"role": "system", "content": """You are a book expert that answers questions about books. Use the following pieces of retrieved context to answer the question."""},
         {"role": "user", "content": f"""
         Context: {format_docs(context)}
         Question: {question}
         Answer:
         """}
-  ]
-  ## answer the question
-  answer = client.chat.completions.create(
-      model=openai_model,
-      messages=message,
-      logprobs=True,
-  )
+    ]
+    # answer the question
+    answer = client.chat.completions.create(
+        model=openai_model,
+        messages=message,
+        logprobs=True,
+    )
 
-  # annotate the question
-  annotated_answer = uncertain_marker(annotated_combiner(annotater(sequential_combine(combine_token_to_word(answer), 5, np.mean), tolerance= -0.4), np.mean))
+    # annotate the question
+    annotated_answer = uncertain_marker(annotated_combiner(annotater(sequential_combine(
+        combine_token_to_word(answer), 5, np.mean), tolerance=-0.4), np.mean))
 
-  # constructing the questions for the uncertained answers
-  message += [
-      {"role": "assistant", "content": answer.choices[0].message.content},
-      {"role": "system", "content": f"""Now, I have marked the answer to where you are uncertain with the phrases. For every, phrases in between
+    # constructing the questions for the uncertained answers
+    message += [
+        {"role": "assistant", "content": answer.choices[0].message.content},
+        {"role": "system", "content": f"""Now, I have marked the answer to where you are uncertain with the phrases. For every, phrases in between
         [uncertain] [/uncertain], please construct a question that will answer each uncertain phrase and mark it as [Search(question)].
 
         This question is going to be used independently to get get relevant texts from a vector database
@@ -64,17 +66,19 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini'):
         user: Here's an annotated version: Joe Biden announced his candidacy for the 2020 presidential election on ([uncertain] August 18, 2019 [/uncertain]). His campaign focused on issues such as restoring the 'soul of America', expanding healthcare access, and addressing climate change.
         assistant: Joe Biden announced his candidacy for the 2020 presidential election on [Search(When did Joe Biden announce his candidancy for the 2020 presidential election?)].  His campaign focused on issues such as restoring the 'soul of America', expanding healthcare access, and addressing climate change.
         """},
-      {"role": "user", "content": f"Here's the annotated version: {annotated_answer.choices[0].message.content}"},
-  ]
-  questions_construction = client.chat.completions.create(
-      model=openai_model,
-      messages=message,
-  )
+        {"role": "user",
+            "content": f"Here's the annotated version: {annotated_answer.choices[0].message.content}"},
+    ]
+    questions_construction = client.chat.completions.create(
+        model=openai_model,
+        messages=message,
+    )
 
-  # extracting the questions
-  message += [
-      {"role": "assistant", "content": questions_construction.choices[0].message.content},
-      {'role': "user", "content": """Now for all the questions marked as [Search(question)], please extract them in a python dictionary format:
+    # extracting the questions
+    message += [
+        {"role": "assistant",
+            "content": questions_construction.choices[0].message.content},
+        {'role': "user", "content": """Now for all the questions marked as [Search(question)], please extract them in a python dictionary format:
       {
       "1": "question 1",
       "2": "question 2",
@@ -84,16 +88,16 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini'):
 
       it is critical to only output the dictionary and nothing else.
       """}
-  ]
-  questions = client.chat.completions.create(
-      model=openai_model,
-      messages=message,
-  )
-  questions_dict = ast.literal_eval(questions.choices[0].message.content)
+    ]
+    questions = client.chat.completions.create(
+        model=openai_model,
+        messages=message,
+    )
+    questions_dict = ast.literal_eval(questions.choices[0].message.content)
 
-  # message to answer the questions one by one
-  new_message = [
-      {"role": "system", "content": f"""You are a book expert that answers questions about books.
+    # message to answer the questions one by one
+    new_message = [
+        {"role": "system", "content": f"""You are a book expert that answers questions about books.
       Question: {question}
       Context: called the RAG
       Original Answer: {answer.choices[0].message.content}
@@ -101,52 +105,62 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini'):
       Now, I have marked the answer to where you are uncertain with the phrases. For every, phrases in between
       [uncertain] [/uncertain], please construct a question that will answer each uncertain phrase and mark it as [Search(question)]
 
-      Annotated Version: {annotated_answer.choices[0].message.content}
-      Constructed Questions: {questions_construction.choices[0].message.content}
+      Annotated Answer: {annotated_answer.choices[0].message.content}
+      Constructed Questions Answer: {questions_construction.choices[0].message.content}
       """},
-  ]
+    ]
 
-  # answering each of the questions one by one
-  constructed_question_answer = {}
-  for i in range(1, len(questions_dict) + 1):
-    question_temp = questions_dict[str(i)]
+    # answering each of the questions one by one
+    constructed_question_answer = {}
+    for i in range(1, len(questions_dict) + 1):
+        question_temp = questions_dict[str(i)]
 
-    ## getting the context for the question
-    context = retriever.get_relevant_documents(question_temp)
+        # getting the context for the question
+        context = retriever.get_relevant_documents(question_temp)
 
-    ## constructing the question and context message
-    question_string = f"""Use the following pieces of retrieved context to answer the question.
+        # constructing the question and context message
+        question_string = f"""Use the following pieces of retrieved context to answer the question.
     Question: {question_temp}
     Context: {format_docs(context)}
     Answer:
     """.format(question=question_temp, context=context)
-    question_message = new_message + [{"role": "user", "content": question_string}]
+        question_message = new_message + \
+            [{"role": "user", "content": question_string}]
 
-    ## answering the question
-    question_answer = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=question_message,
+        # answering the question
+        question_answer = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=question_message,
+        )
+        constructed_question_answer[str(i)] = [
+            question_temp, question_answer.choices[0].message.content]
+
+    # reconstructing to get the final answer
+    question_answer = ""
+    for i in range(1, len(questions_dict) + 1):
+        question_answer += f"""Question: {questions_dict[str(i)]}\nAnswer: {constructed_question_answer[str(i)][1]}\n"""
+
+    reconstructing = f"""
+    Here are the questions and their answers:
+    {question_answer}
+    Now with answers to those questions, improve the original answer without changing the format of the answer.
+    
+    Notes:
+    It's critical to just output the final answer.
+    It's critical to not output the annotated answer.
+    It's critical to not output constructed questions answer.
+
+    Final Answer:
+    """
+    reconstructing_message = new_message + \
+        [{"role": "user", "content": reconstructing}]
+    reconstructed_answer = client.chat.completions.create(
+        model=openai_model,
+        messages=reconstructing_message,
     )
-    constructed_question_answer[str(i)] = [question_temp, question_answer.choices[0].message.content]
 
-  # reconstructing to get the final answer
-  question_answer = ""
-  for i in range(1, len(questions_dict) + 1):
-    question_answer += f"""Question: {questions_dict[str(i)]}\nAnswer: {constructed_question_answer[str(i)][1]}\n"""
-
-  reconstructing = f"""
-  Here are the questions and their answers:
-  {question_answer}
-  Now with answers to those questions, improve the original answer without changing the format of the answer:
-  """
-  reconstructing_message = new_message + [{"role": "user", "content": reconstructing}]
-  reconstructed_answer = client.chat.completions.create(
-      model=openai_model,
-      messages=reconstructing_message,
-  )
-
-  # printing some information
-  print(f"""Question: {question}\nAnswer: {answer.choices[0].message.content}\nAnnotated Answer: {annotated_answer.choices[0].message.content}\nReconstructed Answer: {reconstructed_answer.choices[0].message.content}""")
-  return answer, annotated_answer, reconstructed_answer
-
-
+    # printing some information
+    ## It prints the question construction for the annotated answer because it's clearer to make the annotations as the questions itself
+    print(
+        f"""Question: {question}\nAnswer: {answer.choices[0].message.content}\nAnnotated Answer: {questions_construction.choices[0].message.content}\nReconstructed Answer: {reconstructed_answer.choices[0].message.content}""")
+    return answer, questions_construction, reconstructed_answer
