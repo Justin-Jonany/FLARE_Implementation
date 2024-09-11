@@ -102,7 +102,7 @@ class Extractor:
         """
 
 
-    def extract_text_from_pdf_pytesseract(pdfs_to_extract, page_limit):
+    def text_from_pdf(pdfs_to_extract, page_limit):
         # Initialize a dictionary to store the extracted text
         pdf_data_dict = {}
 
@@ -122,16 +122,19 @@ class Extractor:
 
         return pdf_data_dict, page_counts
 
-    def create_model_response_flare(self, prompt, text, page):
-        while True:
+    def create_model_response_flare(self, prompt, text, page, flare_retry_attempt):
+        retry_attempt = 0
+        while retry_attempt < flare_retry_attempt:
+            retry_attempt += 1
             try:
                 original_answer, annotated_answer, final_answer = flare(
                     prompt, Fake_Retriever(text), self.api_key, verbose=False)
                 break
             except:
-                print(f"Repeating FLARE for page {page}")
+                print(f"Repeating FLARE for page {page}, retry_attempt: {retry_attempt}")
                 continue
         return final_answer.choices[0].message.content
+
 
     def create_model_response(self, prompt, text):
         response = self.client.chat.completions.create(
@@ -143,7 +146,7 @@ class Extractor:
         )
         return response.choices[0].message.content
 
-    def create_extract(self, pdf_data_dict, method='regular'):
+    def dict_from_text(self, pdf_data_dict, method='regular', flare_retry_attempt=3):
         # dictionary to save the final outputs
         output_dict = {}
 
@@ -153,9 +156,9 @@ class Extractor:
             # for each page in the pdf
             for page in pdf_data_dict[pdfname].keys():
                 if method == 'regular':
-                    raw_model_output = self.create_model_response_flare(self.raw_extract, pdf_data_dict[pdfname][page], page)
+                    raw_model_output = self.create_model_response_flare(self.raw_extract, pdf_data_dict[pdfname][page], page, flare_retry_attempt)
                 elif method == 'flare':
-                    raw_model_output = self.create_model_response(self.raw_extract, pdf_data_dict[pdfname][page], page)
+                    raw_model_output = self.create_model_response(self.raw_extract, pdf_data_dict[pdfname][page])
                 else:
                     print("Please specify method as 'regular' or 'flare'")
                     return
