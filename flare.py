@@ -1,7 +1,6 @@
 from openai import OpenAI
 import ast
 from .flare_helper import *
-from pymupdf 
 from langchain_core.documents import Document
 
 class Fake_Retriever:
