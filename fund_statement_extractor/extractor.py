@@ -1,4 +1,4 @@
-import OpenAI
+from openai import OpenAI
 from ..flare import *
 import pytesseract
 from pdf2image import convert_from_path
