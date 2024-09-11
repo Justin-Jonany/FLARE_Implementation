@@ -5,6 +5,8 @@ from pdf2image import convert_from_path
 import ast
 import pandas as pd
 import numpy as np
+import re
+from typing import List, Dict, Tuple, Any
 
 class Extractor:
     def __init__(self, api_key):
