@@ -1,7 +1,23 @@
 from openai import OpenAI
 import ast
 from .flare_helper import *
+from pymupdf 
+from langchain_core.documents import Document
 
+class Fake_Retriever:
+  '''
+  Instead of a vector database. FLARE can be used for regular zero-shot
+  prompting. If the context is relatively not too long, it may be better
+  to just give the whole context to the LLM at all cases.
+
+  The class Fake_Retriever returns the whole context everytime a retriever
+  is called.
+  '''
+  def __init__(self, data):
+    self.data = Document(page_content=data)
+  def get_relevant_documents(self, query):
+    return [self.data]
+  
 
 def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbose=True):
     '''
@@ -32,6 +48,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
         Answer:
         """}
     ]
+
     # answer the question
     answer = client.chat.completions.create(
         model=openai_model,
@@ -79,21 +96,41 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
         {"role": "assistant",
             "content": questions_construction.choices[0].message.content},
         {'role': "user", "content": """Now for all the questions marked as [Search(question)], please extract them in a python dictionary format:
-      {
-      "1": "question 1",
-      "2": "question 2",
-      ...
-      "n": "question n"
-      }
+        {
+        "1": "question 1",
+        "2": "question 2",
+        ...
+        "n": "question n"
+        }
 
-      it is critical to only output the dictionary and nothing else.
+        It is critical to only output the dictionary and nothing else.
+        It is critical to not output it in a markdown format.
+        It is critical that the first character of the output starts with an open curly bracket '{'
       """}
     ]
     questions = client.chat.completions.create(
         model=openai_model,
         messages=message,
     )
-    questions_dict = ast.literal_eval(questions.choices[0].message.content)
+    retry_count= 1
+    try:
+        questions_dict = ast.literal_eval(questions.choices[0].message.content)
+    except:
+        while retry_count <= 3:
+            if verbose: print(f"Couldn't convert to dictionary, attempting to fix the dictionary. Retry count: {retry_count}")
+            questions = client.chat.completions.create(
+                model=openai_model,
+                messages=message,
+            )
+            try:
+                questions_dict = ast.literal_eval(questions.choices[0].message.content)
+                break
+            except:
+                retry_count += 1
+                continue
+        else:
+            print(f'FLARE Failed, try to call the function again.')
+            return
 
     # message to answer the questions one by one
     new_message = [
@@ -160,7 +197,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
     )
 
     # printing some information
-    ## It prints the question construction for the annotated answer because it's clearer to make the annotations as the questions itself
+    # It prints the question construction for the annotated answer because it's clearer to make the annotations as the questions itself
     if verbose:
         print(
             f"""Question: {question}\nAnswer: {answer.choices[0].message.content}\nAnnotated Answer: {questions_construction.choices[0].message.content}\nReconstructed Answer: {reconstructed_answer.choices[0].message.content}""")
