@@ -102,7 +102,18 @@ class Extractor:
         """
 
 
-    def text_from_pdf(pdfs_to_extract, page_limit):
+    def text_from_pdf(self, pdfs_to_extract, page_limit):
+        '''
+        Converts pdf to text using pytesseract
+
+        Args:
+            pdfs_to_extract: list of strings for path to pdf
+            page_limit: an int to define the number of pages to extract text from
+        Returns:
+            a dictionary of pdfs, where the value is a dict of the text in each page
+            a dictionary for the number of pages extracted from each pdf
+        
+        '''
         # Initialize a dictionary to store the extracted text
         pdf_data_dict = {}
 
@@ -123,6 +134,16 @@ class Extractor:
         return pdf_data_dict, page_counts
 
     def create_model_response_flare(self, prompt, text, page, flare_retry_attempt):
+        '''
+        Creates a model response using FLARE RAG method
+        Args:
+            prompt: the prompt (string) to invoke on the llm
+            text: the context (string)
+            page: an int the page of the pdf used (only for documentation purposes)
+            flare_retry_attempt: an int to define how many attempts to do flare
+        Returns:
+            a string which is the response of the llm
+        '''
         retry_attempt = 0
         while retry_attempt < flare_retry_attempt:
             retry_attempt += 1
@@ -137,6 +158,14 @@ class Extractor:
 
 
     def create_model_response(self, prompt, text):
+        '''
+        Creates a model response
+        Args:
+            prompt: the prompt (string) to invoke on the llm
+            text: the context (string)
+        Returns:
+            a string which is the response of the llm
+        '''
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -147,6 +176,18 @@ class Extractor:
         return response.choices[0].message.content
 
     def dict_from_text(self, pdf_data_dict, method='regular', flare_retry_attempt=3):
+        '''
+        Given the text version of a fund_statement, extracts the fields and outputs it as a dictionary
+
+        Args:
+            pdf_data_dict: A dictionary of pdfs, where the value is a dict of the text in each page
+            method: 'regular" to extract the dict with just a single shot prompting. 'flare' to extract the
+                text with the FLARE advanced-RAG method.
+            flare_retry_attempt: The number of times to retry FLARE, if it fails
+        
+        Returns:
+            a dictionary for the fields in the pdf
+        '''
         # dictionary to save the final outputs
         output_dict = {}
 
