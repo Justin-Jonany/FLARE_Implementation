@@ -196,9 +196,9 @@ class Extractor:
             output_dict[pdfname] = {}
             # for each page in the pdf
             for page in pdf_data_dict[pdfname].keys():
-                if method == 'regular':
+                if method == 'flare':
                     raw_model_output = self.create_model_response_flare(self.raw_extract, pdf_data_dict[pdfname][page], page, flare_retry_attempt)
-                elif method == 'flare':
+                elif method == 'regular':
                     raw_model_output = self.create_model_response(self.raw_extract, pdf_data_dict[pdfname][page])
                 else:
                     print("Please specify method as 'regular' or 'flare'")
