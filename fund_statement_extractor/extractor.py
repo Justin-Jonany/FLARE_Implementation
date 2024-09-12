@@ -19,7 +19,6 @@ class Extractor:
         - Date ETF Started
         - As at Date of Investments or assets information
         - Name of the fund in subject
-        - Name of the fund series or class
         - ETF ticker symbol
         - Management Expense Ratio (MER)
         - Distributions, ex: Monthly, Quarterly etc
@@ -40,7 +39,6 @@ class Extractor:
         - worst return
         - Average annual compounded return
         - Trading Expense Ratio (TER)
-        - Annual Management Fee
 
         It is imperative that you follow the following format for output:
         Output Format:
@@ -50,7 +48,6 @@ class Extractor:
         'etf_start_date': list[yyyy-mm-dd],
         'assets_date': list[yyyy-mm-dd],
         'fundname': list[string],
-        'fundseries': list[string],
         'etf_ticker': list[string],
         'management_expense_ratio': list[decimal],
         'distributions': list[string],
@@ -66,12 +63,10 @@ class Extractor:
         'riskrating': low to medium, medium, high etc: string,
         'assets_mix': [(asset1, size)....(assetN, size)] : list[(string, string or decimal)],
         'top_investments': [(investment1, size)....(investmentsN, size)] : list[(string, string or decimal)],
-        'year_by_year_returns':[(year1,return%),(yearN,return%)]: list[(int, string or decimal)]
         'best_return': [date,return] : list[date, decimal],
         'worst_return': [date,return] : list[date, decimal],
         'average_return': list[decimal],
-        'trading_expense_ratio': list[decimal],
-        'annual_management_fee': list[decimal]}
+        'trading_expense_ratio': list[decimal]}
 
         Additional rules for extraction:
         - Make sure to return only if you find the information in the text
@@ -101,6 +96,10 @@ class Extractor:
         Text start:
         """
 
+        self.pdf_data_dict = {}
+        self.page_counts = {}
+        self.pdf_images = {}
+
 
     def text_from_pdf(self, pdfs_to_extract, page_limit):
         '''
@@ -121,16 +120,17 @@ class Extractor:
         for pdf in pdfs_to_extract:
             pdf_data_dict[pdf] = {}
             page_counter = 0
-
             images = convert_from_path(pdf)
+            self.pdf_images[pdf] = images
             for page in images[:page_limit]:
                 text = pytesseract.image_to_string(page)
                 pdf_data_dict[pdf][page_counter] = text
                 page_counter += 1
+            self.pdf_data_dict[pdf] = pdf_data_dict[pdf]
 
         # Get the number of pages in each PDF
         page_counts = {key: len(inner_dict) for key, inner_dict in pdf_data_dict.items()}
-
+        self.page_counts = self.page_counts | page_counts
         return pdf_data_dict, page_counts
 
     def create_model_response_flare(self, prompt, text, page, flare_retry_attempt):
