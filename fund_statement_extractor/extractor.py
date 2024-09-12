@@ -193,9 +193,12 @@ class Extractor:
 
         # iterate through each pdf
         for pdfname in pdf_data_dict.keys():
+            print(f'Extracting: "{pdfname}"')
             output_dict[pdfname] = {}
             # for each page in the pdf
+            total_page = len(pdf_data_dict[pdfname].keys())
             for page in pdf_data_dict[pdfname].keys():
+                print(f'Page {page}/{len(total_page)}')
                 if method == 'flare':
                     raw_model_output = self.create_model_response_flare(self.raw_extract, pdf_data_dict[pdfname][page], page, flare_retry_attempt)
                 elif method == 'regular':
