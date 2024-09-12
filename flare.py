@@ -21,7 +21,7 @@ class Fake_Retriever:
 def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbose=True):
     '''
     Uses a advanced RAG technique called FLARE to answer the question. It's an implementation
-    of the paper: "Active Retrieval Augmented Generation" Jiang ZB and fellow scientists in Octover
+    of the paper: "Active Retrieval Augmented Generation" Jiang ZB and fellow scientists in October
     2023.
 
     Args:
@@ -156,7 +156,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
 
         # constructing the question and context message
         question_string = f"""Use the following pieces of retrieved context to answer the question.
-    Question: {question_temp}
+    Question: {question}
     Context: {format_docs(context)}
     Answer:
     """.format(question=question_temp, context=context)

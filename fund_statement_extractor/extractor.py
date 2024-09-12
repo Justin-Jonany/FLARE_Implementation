@@ -8,8 +8,8 @@ import numpy as np
 import re
 from typing import List, Dict, Tuple, Any
 
-class Extractor:
-    def __init__(self, api_key):
+class FundStatementExtractor:
+    def __init__(self, api_key, openai_model='gpt-4o-mini'):
         self.client = OpenAI(api_key=api_key)
         self.api_key = api_key
         self.raw_extract = """In the given fund facts statement text, please extract the following information:
@@ -84,7 +84,6 @@ class Extractor:
 
         Fund Facts Statement start:
         """
-
         self.dict_reformat = """ You are given an invalid dictionary string that I was unable to convert to dictionary object using ast.literal_eval. I need your help to update the
         string so that I can convert this into a dictionary object.
         - Fix any format issues that might be causing an error.
@@ -95,10 +94,10 @@ class Extractor:
         - Your output should start with "{" and end with "}". Please do not even say "Sure! Here is your output"
         Text start:
         """
-
         self.pdf_data_dict = {}
         self.page_counts = {}
         self.pdf_images = {}
+        self.openai_model = openai_model
 
 
     def text_from_pdf(self, pdfs_to_extract, page_limit):
@@ -149,11 +148,14 @@ class Extractor:
             retry_attempt += 1
             try:
                 original_answer, annotated_answer, final_answer = flare(
-                    prompt, Fake_Retriever(text), self.api_key, verbose=False)
+                    prompt, Fake_Retriever(text), self.api_key, self.openai_model, verbose=False)
                 break
             except:
                 print(f"Repeating FLARE for page {page}, retry_attempt: {retry_attempt}")
                 continue
+        else:
+            raise ValueError("FLARE Failed")
+        
         return final_answer.choices[0].message.content
 
 
@@ -167,7 +169,7 @@ class Extractor:
             a string which is the response of the llm
         '''
         response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=self.openai_model,
             messages=[
                 {"role": "system", "content": "You are an AI assistant that helps extract structured information from a given unstructured text."},
                 {"role": "user", "content": f'{prompt}\n{text}'},
@@ -198,7 +200,7 @@ class Extractor:
             # for each page in the pdf
             total_page = len(pdf_data_dict[pdfname].keys())
             for page in pdf_data_dict[pdfname].keys():
-                print(f'Page {page}/{len(total_page)}')
+                print(f'Page {page}/{total_page}')
                 if method == 'flare':
                     raw_model_output = self.create_model_response_flare(self.raw_extract, pdf_data_dict[pdfname][page], page, flare_retry_attempt)
                 elif method == 'regular':
