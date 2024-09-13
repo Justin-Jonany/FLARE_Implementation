@@ -201,7 +201,7 @@ class FundStatementExtractor:
             # for each page in the pdf
             total_page = len(pdf_data_dict[pdfname].keys())
             for page in pdf_data_dict[pdfname].keys():
-                print(f'Page {page}/{total_page}')
+                print(f'Page {page + 1}/{total_page}')
                 if method == 'flare':
                     raw_model_output = self.create_model_response_flare(self.raw_extract, pdf_data_dict[pdfname][page], page, flare_retry_attempt, verbose=verbose)
                 elif method == 'regular':
