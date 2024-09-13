@@ -3,3 +3,5 @@ numpy
 pytesseract
 langchain_core
 pdf2image
+easyocr
+pymupdf

@@ -7,7 +7,8 @@ import pandas as pd
 import numpy as np
 import re
 from typing import List, Dict, Tuple, Any
-
+import easyocr
+import fitz
 class FundStatementExtractor:
     def __init__(self, api_key, openai_model='gpt-4o-mini'):
         self.client = OpenAI(api_key=api_key)
@@ -98,15 +99,37 @@ class FundStatementExtractor:
         self.page_counts = {}
         self.pdf_images = {}
         self.openai_model = openai_model
+        self.easeyocr_reader = easyocr.Reader(["en"])
+
+    # pix to image
+    def pix_to_image(self, pix):
+        """
+        Converts a pixmap to an image.
+
+        Parameters:
+        pix (fitz.Pixmap): The pixmap to convert.
+
+        Returns:
+        np.ndarray: The resulting image.
+        """
+
+        # Convert the pixmap samples to a numpy array
+        bytes = np.frombuffer(pix.samples, dtype=np.uint8)
+
+        # Reshape the array to match the dimensions of the pixmap
+        img = bytes.reshape(pix.height, pix.width, pix.n)
+
+        return img
 
 
-    def text_from_pdf(self, pdfs_to_extract, page_limit):
+    def text_from_pdf(self, pdfs_to_extract, page_limit, method):
         '''
         Converts pdf to text using pytesseract
 
         Args:
             pdfs_to_extract: list of strings for path to pdf
             page_limit: an int to define the number of pages to extract text from
+            method: a string either 'pytesseract' or 'easyocr' for the method of ocr to convert image to text
         Returns:
             a dictionary of pdfs, where the value is a dict of the text in each page
             a dictionary for the number of pages extracted from each pdf
@@ -119,18 +142,39 @@ class FundStatementExtractor:
         for pdf in pdfs_to_extract:
             pdf_data_dict[pdf] = {}
             page_counter = 0
-            images = convert_from_path(pdf)
-            self.pdf_images[pdf] = images
-            for page in images[:page_limit]:
-                text = pytesseract.image_to_string(page)
-                pdf_data_dict[pdf][page_counter] = text
-                page_counter += 1
-            self.pdf_data_dict[pdf] = pdf_data_dict[pdf]
+
+            if method == 'pytesseract':
+                images = convert_from_path(pdf)
+                self.pdf_images[pdf] = images
+                for page in images[:page_limit]:
+                    text = pytesseract.image_to_string(page)
+                    pdf_data_dict[pdf][page_counter] = text
+                    page_counter += 1
+                self.pdf_data_dict[pdf] = pdf_data_dict[pdf]
+            elif method == 'easyocr':
+                # Open the PDF file
+                with fitz.open(pdf) as doc:
+                    # Iterate over the pages in the PDF file
+                    for page in doc:
+                        # print(f"Reading PDF: {pdf}.")
+                        pdf_data_dict[pdf][page_counter] = {}
+                        # Use OCR to extract text from the current page and store it in the dictionary
+                        pix = page.get_pixmap(dpi=200)
+                        page_extract = self.easeyocr_reader.readtext(self.pix_to_image(pix), paragraph=False)
+                        pdf_data_dict[pdf][page_counter] = ("\n").join([text for source, text, confidence in page_extract])
+
+                        # If a page limit is given and has been reached, stop processing this PDF file
+                        if page_limit and page_counter == page_limit:
+                            print(f"Reached page limit for {pdf}.")
+                            break
+
+                        page_counter += 1
 
         # Get the number of pages in each PDF
         page_counts = {key: len(inner_dict) for key, inner_dict in pdf_data_dict.items()}
         self.page_counts = self.page_counts | page_counts
         return pdf_data_dict, page_counts
+
 
     def create_model_response_flare(self, prompt, text, page, flare_retry_attempt, verbose=False):
         '''
