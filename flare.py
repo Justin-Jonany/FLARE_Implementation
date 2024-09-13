@@ -207,7 +207,4 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', toler
 
     # printing some information
     # It prints the question construction for the annotated answer because it's clearer to make the annotations as the questions itself
-    if verbose:
-        print(
-            f"""Question: {question}\nAnswer: {answer.choices[0].message.content}\nAnnotated Answer: {questions_construction.choices[0].message.content}\nReconstructed Answer: {reconstructed_answer.choices[0].message.content}""")
     return answer, questions_construction, reconstructed_answer
