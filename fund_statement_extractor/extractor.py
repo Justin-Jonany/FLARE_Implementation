@@ -390,16 +390,18 @@ class FundStatementExtractor:
         Returns:
             The DataFrame with the found sequences.
         """
+        # Get the first index of the df
+        first_index = df.index[0]
 
         # Get the maximum value count
         max_sequence_count = df["value_counts"].max()
 
         # Get all rows where sequence count is equal to max_sequence_count
-        df_max = df[df["value_counts"] == max_sequence_count]
+        df_max = df[df["value_counts"] == max_sequence_count].copy()
+
 
         # Count all rows between each "max" row
         df_max["in_between_pages"] = df_max["row_numbers"].diff() - 1
-        # print(df_max)
 
         # Check if there are more than 4 pages (3+itself) in between or after the last "highest" number page
         large_gaps = df_max[df_max["in_between_pages"] > 3]
@@ -415,14 +417,23 @@ class FundStatementExtractor:
             if not gap_df.empty:
                 df_max = pd.concat([df_max, self.sequence_search(gap_df)])
 
-        # Check if there are more than four pages left after the last "highest" number page
+
+        # Check if there are more than four pages left before the last "highest" number page
         last_row_number = df_max.iloc[-1]["row_numbers"]
-        remaining_df = df[df["row_numbers"] > last_row_number]
+        remaining_df_behind = df[df["row_numbers"] < last_row_number]
+
+        # using 2 pages as cutoff - before the last recorded page
+        if not remaining_df_behind.empty and len(remaining_df_behind) > 2:
+            df_max = pd.concat([self.sequence_search(remaining_df_behind), df_max])
+
+        # Check if there are more than four pages left after the last "highest" number page
+        remaining_df_front = df[df["row_numbers"] > last_row_number]
 
         # again using 4 pages as cutoff - after the last recorded page (this will catch 5 page statements)
-        if not remaining_df.empty and len(remaining_df) > 4:
-            df_max = pd.concat([df_max, self.sequence_search(remaining_df)])
+        if not remaining_df_front.empty and len(remaining_df_front) > 4:
+            df_max = pd.concat([df_max, self.sequence_search(remaining_df_front)])
 
+      
         return df_max
 
     def combine_sequences_to_create_extract(self, df, df_sequences, cols_to_fill=None):
