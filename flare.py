@@ -18,7 +18,7 @@ class Fake_Retriever:
     return [self.data]
   
 
-def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbose=True):
+def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', tolerance=-0.4, verbose=True):
     '''
     Uses a advanced RAG technique called FLARE to answer the question. It's an implementation
     of the paper: "Active Retrieval Augmented Generation" Jiang ZB and fellow scientists in October
@@ -28,6 +28,8 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
       question: The question to be answered.
       retriever: langchain retriever to be used.
       openai_api_key: The OPENAI API key to be used.
+      openai_model: OpenAI Model to use
+      tolerance: The tolerance of logprobs to be marked as uncertain
     Returns:
       The answer to the question.
 
@@ -48,6 +50,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
         """}
     ]
 
+    if verbose: print(f'Acquiring answer with traditional RAG...')
     # answer the question
     answer = client.chat.completions.create(
         model=openai_model,
@@ -55,9 +58,10 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
         logprobs=True,
     )
 
+    if verbose: print(f'Finding uncertain tokens, and annotating the answer...')
     # annotate the question
     annotated_answer = uncertain_marker(annotated_combiner(annotater(sequential_combine(
-        combine_token_to_word(answer), 5, np.mean), tolerance=-0.4), np.mean))
+        combine_token_to_word(answer), 5, np.mean), tolerance=tolerance), np.mean))
 
     # constructing the questions for the uncertained answers
     message += [
@@ -85,6 +89,8 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
         {"role": "user",
             "content": f"Here's the annotated version: {annotated_answer.choices[0].message.content}"},
     ]
+
+    if verbose: print(f'Constructing questions for the annotated tokens...')
     questions_construction = client.chat.completions.create(
         model=openai_model,
         messages=message,
@@ -107,6 +113,8 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
         It is critical that the first character of the output starts with an open curly bracket '{'
       """}
     ]
+
+    if verbose: print(f'Extracting constructed questions...')
     questions = client.chat.completions.create(
         model=openai_model,
         messages=message,
@@ -146,6 +154,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
       """},
     ]
 
+    if verbose: print(f'Answering each questions...')
     # answering each of the questions one by one
     constructed_question_answer = {}
     for i in range(1, len(questions_dict) + 1):
@@ -156,10 +165,10 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
 
         # constructing the question and context message
         question_string = f"""Use the following pieces of retrieved context to answer the question.
-    Question: {question}
-    Context: {format_docs(context)}
-    Answer:
-    """.format(question=question_temp, context=context)
+        Question: {question}
+        Context: {format_docs(context)}
+        Answer:
+        """
         question_message = new_message + \
             [{"role": "user", "content": question_string}]
 
@@ -190,6 +199,7 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', verbo
     """
     reconstructing_message = new_message + \
         [{"role": "user", "content": reconstructing}]
+    if verbose: print(f'Reconstructing the final answer...')
     reconstructed_answer = client.chat.completions.create(
         model=openai_model,
         messages=reconstructing_message,

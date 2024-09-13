@@ -132,7 +132,7 @@ class FundStatementExtractor:
         self.page_counts = self.page_counts | page_counts
         return pdf_data_dict, page_counts
 
-    def create_model_response_flare(self, prompt, text, page, flare_retry_attempt):
+    def create_model_response_flare(self, prompt, text, page, flare_retry_attempt, verbose=False):
         '''
         Creates a model response using FLARE RAG method
         Args:
@@ -148,9 +148,10 @@ class FundStatementExtractor:
             retry_attempt += 1
             try:
                 original_answer, annotated_answer, final_answer = flare(
-                    prompt, Fake_Retriever(text), self.api_key, self.openai_model, verbose=False)
+                    prompt, Fake_Retriever(text), self.api_key, self.openai_model, verbose=verbose)
                 break
-            except:
+            except Exception as e:
+                print(f"FLARE Failed: {e}")
                 print(f"Repeating FLARE for page {page}, retry_attempt: {retry_attempt}")
                 continue
         else:
@@ -177,7 +178,7 @@ class FundStatementExtractor:
         )
         return response.choices[0].message.content
 
-    def dict_from_text(self, pdf_data_dict, method='regular', flare_retry_attempt=3):
+    def dict_from_text(self, pdf_data_dict, method='regular', flare_retry_attempt=3, verbose=False):
         '''
         Given the text version of a fund_statement, extracts the fields and outputs it as a dictionary
 
@@ -202,7 +203,7 @@ class FundStatementExtractor:
             for page in pdf_data_dict[pdfname].keys():
                 print(f'Page {page}/{total_page}')
                 if method == 'flare':
-                    raw_model_output = self.create_model_response_flare(self.raw_extract, pdf_data_dict[pdfname][page], page, flare_retry_attempt)
+                    raw_model_output = self.create_model_response_flare(self.raw_extract, pdf_data_dict[pdfname][page], page, flare_retry_attempt, verbose=verbose)
                 elif method == 'regular':
                     raw_model_output = self.create_model_response(self.raw_extract, pdf_data_dict[pdfname][page])
                 else:
@@ -217,7 +218,6 @@ class FundStatementExtractor:
                         cleaned_model_output = self.create_model_response(self.dict_reformat, raw_model_output)
                         output_dict[pdfname][page] = ast.literal_eval(cleaned_model_output)
                     except Exception as e:
-
                         # Step 1: Extract the dictionary part
                         start_index = cleaned_model_output.find('{')
                         end_index = cleaned_model_output.rfind('}') + 1
