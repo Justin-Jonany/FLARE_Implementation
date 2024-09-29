@@ -48,6 +48,7 @@ In "The Richest Man in ([uncertain] Babylon," Arkad, who is the [/uncertain])  r
 [Search(What characteristics do diligent, prepared, and hardworking people exhibit according to Arkad?)] Arkad suggests that those who are diligent, prepared, and willing to work toward their goals are more likely to encounter [Search(What are examples of opportunities that lead to success in the book?)] opportunities that lead to success. [Search(What does Arkad say about the nature of luck?)] In essence, he emphasizes that luck is not merely random chance; rather, it is created through effort, willingness to take [Search(What type of risks does Arkad encourage people to take?)] risks, and the ability to [Search(How does one recognize and act on chances?)][Search(What does Arkad mean by "chances" in the context of life?)] recognize and act on chances [Search(What does Arkad mean by "that life presents"?)] that life presents. [Search(Why does Arkad advocate for a proactive approach to achieving financial success?)] This perspective encourages readers to be proactive and to seek out opportunities, rather than relying solely on chance for financial [Search(What does financial success mean in the context of the book?)] success.
 
 ### Step 4. Extract as dictionary
+```
 {'1': "What is the setting of the book 'The Richest Man in Babylon'?",
  '2': 'Who is Arkad in the context of the book?',
  '3': "What does Arkad mean by 'a byproduct of one’s readiness' in terms of seizing opportunities?",
@@ -62,7 +63,7 @@ In "The Richest Man in ([uncertain] Babylon," Arkad, who is the [/uncertain])  r
  '12': "What does Arkad mean by 'that life presents'?",
  '13': 'Why does Arkad advocate for a proactive approach to achieving financial success?',
  '14': 'What does financial success mean in the context of the book?'}
-
+```
  ### Step 5. Answering each question
  1. **Question**: What is the setting of the book 'The Richest Man in Babylon'?\
 **Answer**: Arkad believed that good luck follows opportunity because he understood that wealth is not simply a matter of fate or luck; it is a result of taking action when opportunities present themselves. During his journey to accumulate wealth, he realized that many people fail to recognize the opportunities available to them or choose not to act on them. Instead of waiting for fortune to smile upon them, Arkad emphasized the importance of being proactive, diligent, and prepared to seize chances when they arise.\
@@ -111,3 +112,24 @@ There will be 2 methods of extraction: Regular and FLARE. The only difference is
 ### Step 3. Combining the output of the LLM to fund statements
 Now that we have dictionaries of the fields found in each page in a PDF (where each PDF can have multiple funds of different number of pages), we need to combine them. This will be done recursively through quite a number of steps. However, the algorithm revolves around the assumption that the initial start of a fund will always have the number of fields, and each fund will have 3-5 pages. Although not perfect and haven't been tested on a large dataset, this algorithm hasn't faced any issue so far. The implementation of this can be found [here](https://github.com/Justin-Jonany/FLARE_Implementation/blob/main/fund_statement_extractor/extractor.py)
 
+
+## Results
+In conclusion, though not a crazy improvement, FLARE is able to improve Regular PDF Extractions. With a small dataset of just 9 ETFs, in the best case, the LLM's performance was able to **improve from 94.5% to 96%**, when using EasyOCR. FLARE's capabilities includes the following:
+* Retrieve imcomplete informations that Regular PDF extraction is not able to
+* Fix some details the Regular PDF extraction miss
+
+It's also good to mention that FLARE  didn't change any correct answers to wrong, so it doesn't cause hallucinations.
+
+### Issues
+There are several issues with this demonstration:
+* It's impossible to determine whether an OCR's mistake would've been correct if the OCR did it correctly.
+* It's hard to determine whether the OCR's messy output that causes the LLM to get the wrong data should be considered the OCR's or the LLM's fault.
+* The dataset is too small due to manual assessment
+* FLARE causes a lot of resources, due to the multiple API calls to OpenAI
+
+### Future Work
+With more resources and time, here are several things that can be improved:
+* Using the new PymuPDF4LLM to extract the texts, and for any tables or figures with texts that are images, use pytesseract to extract them or input them to the LLM as well.
+* Use more datasets
+* Assesment should be automated either with similarity functions that can asses the subtle differences that LLMs output or with another LLM that judges them.
+* Other models performance should be observed, as we don't know how FLARE could improve on models that performs worse.
