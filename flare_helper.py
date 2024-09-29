@@ -68,7 +68,7 @@ def logprobs_pretty_print(response, prompt):
     perplexity_score = np.exp(-np.mean(logprobs))
     print("Prompt:".ljust(max_starter_length), prompt)
     print("Response:".ljust(max_starter_length), response_text, "\n")
-    print("==========================================================================================================================================")
+    print("="*150)
     cut_off_start = 0
     cut_off_end = 0
     for i, new_line_index in enumerate(new_lines_index):
@@ -83,7 +83,7 @@ def logprobs_pretty_print(response, prompt):
         if hasattr(response.choices[0].logprobs.content[0], 'uncertain'):
             print("Uncertainty:".ljust(max_starter_length), " ".join(
                 formatted_uncertain[cut_off_start:cut_off_end]))
-        print("==========================================================================================================================================")
+        print("="*150)
     print("Tokens:".ljust(max_starter_length), " ".join(
         formatted_response_tokens[cut_off_end:]))
     print("Logprobs:".ljust(max_starter_length),
@@ -94,7 +94,7 @@ def logprobs_pretty_print(response, prompt):
         print("Uncertainty:".ljust(max_starter_length),
               " ".join(formatted_uncertain[cut_off_end:]))
 
-    print("==========================================================================================================================================")
+    print("="*150)
     print("Perplexity:".ljust(max_starter_length), perplexity_score, "\n")
 
 

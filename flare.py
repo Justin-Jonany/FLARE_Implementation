@@ -31,7 +31,8 @@ def flare(question, retriever, openai_api_key, openai_model='gpt-4o-mini', toler
       openai_model: OpenAI Model to use
       tolerance: The tolerance of logprobs to be marked as uncertain
     Returns:
-      The answer to the question.
+      A 3-item tuple, which are all OpenAI objects. The items are the original answer,
+      annotated answer, and finally the improved answer.
 
     '''
     client = OpenAI(api_key=openai_api_key)
