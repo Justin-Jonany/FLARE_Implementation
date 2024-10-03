@@ -114,11 +114,13 @@ Now that we have dictionaries of the fields found in each page in a PDF (where e
 
 
 ## Results
-In conclusion, though not a crazy improvement, FLARE is able to improve Regular PDF Extractions. With a small dataset of just 9 ETFs, in the best case, the LLM's performance was able to **improve from 94.5% to 96%**, when using EasyOCR. FLARE's capabilities includes the following:
+In conclusion, FLARE is able to improve Regular PDF Extractions. With a small dataset of just 9 ETFs, in the best case, the LLM's performance was able to **improve from 91% to 96.5%**, when using EasyOCR. FLARE's capabilities includes the following:
 * Retrieve imcomplete informations that Regular PDF extraction is not able to
 * Fix some details the Regular PDF extraction miss
 
-It's also good to mention that FLARE  didn't change any correct answers to wrong, so it doesn't cause hallucinations.
+It's also good to mention that FLARE  didn't change any correct answers to wrong, so it doesn't cause hallucinations. In fact, it reduced the number of LLM Mistakes from 15 to 3, which means it **reduces hallcuination by 80%**.
+
+![Summary image](fund_statement_extractor/output/Summary.png)
 
 ### Issues
 There are several issues with this demonstration:
