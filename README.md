@@ -1,7 +1,7 @@
 # **FLARE**
 We know that when LLM's output tokens, they also output the probabilities associated with each token, as a result of the transformer model's outputting layer. However, what does these number mean? There have been several researchs arround this, some takes these numbers as how confident the LLMs are with its answer. Now, what if for every token that an LLM outputs with low probability, in other words, when it's unsure, we help give it context to answer those parts of the answer.
 
-Introducing, the paper "[Active Retrieval Augmented Generation](https://arxiv.org/pdf/2305.06983)" by Jiang ZB and fellow researchers written on October 22, 2023, and the goal of this project will be to implement the paper and test it for various tasks. Although, at the the time of this project's starting date (August 6, 2024), it may seem relatively out-of-date, this technique is still relevant and efficient, and can be implemented for any future model that allows users to access the probabilities of each tokens.
+Introducing, the paper "[Active Retrieval Augmented Generation](https://arxiv.org/pdf/2305.06983)" by Jiang ZB and fellow researchers written on October 22, 2023, and the goal of this project will be to implement the paper and test it for various tasks. The goal of this project is to implement a similar technique that the authors have developed, and this technique can be implemented for any future model that allows users to access the probabilities of each token.
 
 All functions can be accessed in my github repository: [github.com/Justin-Jonany/FLARE_Implementation](https://github.com/Justin-Jonany/FLARE_Implementation)
 
