@@ -1,5 +1,5 @@
 openai
-numpy
+numpy==1.26.3
 pytesseract
 langchain_core
 pdf2image
